@@ -21,6 +21,9 @@ function usage {
 ##
 # log functions
 ##
+function put() {
+  echo $@
+}
 function info() {
   echo -e "\033[0;32m[INFO]$@\033[0m"
 }
@@ -43,6 +46,8 @@ function defaults {
   CD=cd
   CASE_SENSITIVE=
   INDEXED_FILE=".indexed.go"
+  DEBUG=
+  TEST=
   return 0
 }
 
@@ -60,18 +65,18 @@ function go_to {
   debug "go_to: $@"
   if [ -z "$TEST" ]; then
     if [[ "$1" == \>* ]]; then
-      debug "$CD ${1#>}"
+      debug "$CD ${@#>}"
       $CD ${1#>}
     elif [[ "$1" == \=* ]]; then
-      ${1#=}
+      eval ${@#=}
     else
       $CD $1
     fi
   else
-    if [[ "$1" == ">*" ]]; then
-      info "going to: ${1#>}"
-    elif [[ "$1" == "=*" ]]; then
-      info "executing: ${1#=}"
+    if [[ "$1" == \>* ]]; then
+      info "going to: ${@#>}"
+    elif [[ "$1" == \=* ]]; then
+      info "executing: ${@#=}"
     else
       info "going to: $1"
     fi
@@ -79,23 +84,26 @@ function go_to {
 }
 
 function go_multi {
-  debug "go_multi: $@"
+  debug "go_multi: $@($#)"
   target=$1
   shift
 
-  info "More than one path is matched:"
+  put "More than one path is matched:"
   index=0
   indexed_file_path="$BASE_PATH/$INDEXED_FILE"
   if [ -e $indexed_file_path ]; then
     debug "indexed file exists, remove"
     rm -f $indexed_file_path
   fi
-  for command in "$@"; do
-    info " $index: $command"
+  OLD_IFS="$IFS"
+  IFS=$'\n'
+  for command in $@ ; do
+    put " $index: $command"
     echo "$index${command#$target}" >> $indexed_file_path
     index=$((index+1))
   done
-  info "use go @{index} to go to the specified index"
+  IFS=$OLD_IFS
+  put "use go @{index} to go to the specified index"
   return 1
 }
 
@@ -106,12 +114,15 @@ function go_go_file {
   # a hack for handling spaces in results when building results array
   # TODO any better way?
   #
-  results="$(grep -h "^$target" $@ | awk "{print \"'\"\$1\"'\"}")"
-  eval "results=($results)"
+  results=$(grep -h "^$target[^a-z0-9]" $@)
   if [ "$?" -eq 0 ]; then 
+    OLD_IFS="$IFS"
+    IFS=$'\n'
+    results=($results)
+    IFS=$OLD_IFS
     debug "get ${#results[@]} matches: ${results[@]}"
     if [ ${#results[@]} -gt 1 ]; then
-      go_multi $target ${results[@]}
+      go_multi $target "${results[@]}"
       return 0
     else
       go_to ${results[0]#$target}
@@ -144,13 +155,15 @@ function go_indexed {
 # use modules to search
 ##
 function search_modules {
-  if [ $# > 1 ]; then
+  if [ $# -ge 1 ]; then
     module=$1
-    script_module_path=$BASE_PATH/go-$module
-    if [ -e $script_module_path -a -x $script_module_path ]; then
+    script_module_path=$BASE_PATH/go-$module.sh
+    debug "trying to find file module with $script_module_path"
+    if [ -e $script_module_path ]; then
       debug "found module file go-$module"
       shift
-      return $script_module_path "$@"
+      source $script_module_path "$@"
+      return 0
     fi
   fi
   modules_path="$BASE_PATH/modules"

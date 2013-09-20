@@ -15,7 +15,7 @@ go some_dir           # go some_dir rooted in the current directory or home_dire
 go @0                 # go to the match indexed with 0
 
 # providing modules to support extending of the basic stuff
-go db local     # open a db client linked to local db server
+go db local     # open a db client linked to the local db server
 go add server=ssh username@192.168.0.37
 go add 'video>/home/username/video'
 ```
