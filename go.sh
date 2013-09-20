@@ -22,7 +22,7 @@ function usage {
 # log functions
 ##
 function put() {
-  echo $@
+  echo -e $@
 }
 function info() {
   echo -e "\033[0;32m[INFO]$@\033[0m"
@@ -39,6 +39,21 @@ function error() {
   echo -e "\033[1;31m[ERROR]$@\033[0m"
 }
 
+function push_IFS() {
+  index=${#OLD_IFS[@]}
+  OLD_IFS[$index]="$IFS"
+  IFS=$1
+}
+
+function pop_IFS() {
+  index=$(( ${#OLD_IFS[@]} - 1))
+  if [ "$index" -gt 0 ]; then
+    IFS=${OLD_IFS[$index]}
+    unset OLD_IFS[$index]
+  fi
+}
+
+
 ##
 # setup default vairables
 ##
@@ -48,6 +63,7 @@ function defaults {
   INDEXED_FILE=".indexed.go"
   DEBUG=
   TEST=
+  MAX_DEPTH=3
   return 0
 }
 
@@ -88,26 +104,26 @@ function go_multi {
   target=$1
   shift
 
-  put "More than one path is matched:"
+  put "More than one path is matched:\n"
   index=0
   indexed_file_path="$BASE_PATH/$INDEXED_FILE"
   if [ -e $indexed_file_path ]; then
     debug "indexed file exists, remove"
     rm -f $indexed_file_path
   fi
-  OLD_IFS="$IFS"
-  IFS=$'\n'
+  push_IFS $'\n'
   for command in $@ ; do
     put " $index: $command"
     echo "$index${command#$target}" >> $indexed_file_path
     index=$((index+1))
   done
-  IFS=$OLD_IFS
+  pop_IFS
   put "use go @{index} to go to the specified index"
   return 1
 }
 
 function go_go_file {
+  debug "go_go_file $@"
   target=$1
   shift
   #
@@ -116,10 +132,9 @@ function go_go_file {
   #
   results=$(grep -h "^$target[^a-z0-9]" $@)
   if [ "$?" -eq 0 ]; then 
-    OLD_IFS="$IFS"
-    IFS=$'\n'
+    push_IFS $'\n'
     results=($results)
-    IFS=$OLD_IFS
+    pop_IFS
     debug "get ${#results[@]} matches: ${results[@]}"
     if [ ${#results[@]} -gt 1 ]; then
       go_multi $target "${results[@]}"
@@ -129,6 +144,7 @@ function go_go_file {
       return 0
     fi
   fi
+  return 1
 }
 
 
@@ -177,7 +193,6 @@ function search_modules {
         return 0
       else
         debug "cannot fina any match in module: '$module' for '$@'"
-        return 1
       fi
     else
       warn "cannot find go.sh (or it's not executable) for module: $module"
@@ -187,9 +202,11 @@ function search_modules {
 }
 
 ##
-# search through pathes specified in config/*.go
+# search through go files specified in config/*.go
+# param name the name to search
 ##
-function search_pathes_file {
+function search_go_files {
+  debug "search go files $@"
   if go_go_file "$1" "$(ls $BASE_PATH/config/*.go)"; then
     return 0
   fi
@@ -197,15 +214,43 @@ function search_pathes_file {
 }
 
 ##
-# search the file tree rooted with the current directory
+# search the file tree rooted in the specified directory
+# param path the root path
+# param name the name to search
 ##
 function search_dir_recursively {
   debug "search recursively with '$1'"
+  root_path=$1
+  shift
+  FIND_OPTS=""
+  if [ -z "$CASE_SENSITIVE" ]; then
+    FIND_OPTS="$FIND_OPTS -iname $@"
+  else
+    FIND_OPTS="$FIND_OPTS -name $@"
+  fi
+  if [ ! -z "$MAX_DEPTH" ]; then
+    FIND_OPTS="$FIND_OPTS -maxdepth $MAX_DEPTH"
+  fi
+  results=$(eval "find $root_path $FIND_OPTS")
+  push_IFS $'\n'
+  results=($results)
+  pop_IFS
+  debug "get ${#results[@]} matches: ${results[@]}"
+  if [ ${#results[@]} -gt 1 ]; then
+    go_multi $target "${results[@]}"
+    return 0
+  elif [ ${#results[@]} -eq 1 ]; then
+    go_to ${results[0]#$target}
+    return 0
+  fi
   return 1
 }
 
+##
+# the last step of the scripts, output a sorry
+##
 function failed {
-  error "sorry we can't understand you intention with '$@'"
+  error "sorry we can take you to anywhere but '$@', cuz we dont understand it"
   return 1
 }
 
@@ -248,7 +293,7 @@ fi
 init
 
 debug "go $@"
-if [[ "$1" == @? ]]; then
+if [[ "$1" == @* ]]; then
   go_indexed ${1#@*}
   return $?
 fi
@@ -260,4 +305,4 @@ fi
 # * current directory
 # * home directory
 ##
-search_modules $@ || search_pathes_file $@ || search_dir_recursively $(pwd) $@ || search_dir_recursively $HOME $@ || failed $@
+search_modules $@ || search_go_files $@ || search_dir_recursively $(pwd) $@ || search_dir_recursively $HOME $@ || failed $@
