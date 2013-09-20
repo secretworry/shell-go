@@ -173,7 +173,7 @@ function go_indexed {
 function search_modules {
   if [ $# -ge 1 ]; then
     module=$1
-    script_module_path=$BASE_PATH/go-$module.sh
+    script_module_path=$BASE_PATH/modules/go-$module.sh
     debug "trying to find file module with $script_module_path"
     if [ -e $script_module_path ]; then
       debug "found module file go-$module"
