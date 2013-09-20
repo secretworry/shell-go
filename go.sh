@@ -5,7 +5,7 @@
 ##
 function usage {
   echo 1>&2 ""
-  echo 1>&2 "Usage: go [options] [module] \"to anywhere\""
+  echo 1>&2 "Usage: go [options] \"to anywhere\""
   echo 1>&2 ""
   echo 1>&2 "\t-d    - debug. output debug info"
   echo 1>&2 "\t-t    - dry run. just show the place you are leading to"
