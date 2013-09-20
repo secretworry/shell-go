@@ -17,6 +17,7 @@ go @0                 # go to the match indexed with 0
 # provide modules to support more operations
 go db local     # open a db client linked to local db server
 go add server=ssh username@192.168.0.37
+go add 'video>/home/username/video'
 ```
 
 ## Install && Config

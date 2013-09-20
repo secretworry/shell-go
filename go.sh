@@ -148,6 +148,7 @@ function search_modules {
     module=$1
     script_module_path=$BASE_PATH/go-$module
     if [ -e $script_module_path -a -x $script_module_path ]; then
+      debug "found module file go-$module"
       shift
       return $script_module_path "$@"
     fi
@@ -162,7 +163,7 @@ function search_modules {
         debug "matched in module: $module"
         return 0
       else
-        warn "cannot fina any match in module: '$module' for '$@'"
+        debug "cannot fina any match in module: '$module' for '$@'"
         return 1
       fi
     else
