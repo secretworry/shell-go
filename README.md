@@ -28,6 +28,13 @@ TODO
 
 TODO
 
+## Compatability
+
+Tested environment
+* bash 3.2.48, OS X 10.8.4 (mine)
+
+(due to long-existing portability problems with shell scripts, for now, the script can only be used under the environment similar to mine)
+
 ## Developers
 
 * [siyu.du](https://github.com/secretworry) dusiyh@gmail.com
