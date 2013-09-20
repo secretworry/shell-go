@@ -1,2 +1,249 @@
-function search_pathes_file() {
+#! /bin/sh
+
+##
+# show usage
+##
+function usage {
+  echo 1>&2 ""
+  echo 1>&2 "Usage: go [options] [module] \"to anywhere\""
+  echo 1>&2 ""
+  echo 1>&2 "\t-d    - debug. output debug info"
+  echo 1>&2 "\t-t    - dry run. just show the place you are leading to"
+  echo 1>&2 "\t-p    - use pushd instead of cd"
+  echo 1>&2 "\t-C    - case sensitive"
+  echo 1>&2 ""
+  echo 1>&2 "\t-h    - display this"
+  echo 1>&2 ""
 }
+
+#--- lib --------------------------------------------------------------------------
+
+##
+# log functions
+##
+function info() {
+  echo -e "\033[0;32m[INFO]$@\033[0m"
+}
+function warn() {
+  echo -e "\033[0;33m[WARN]$@\033[0m"
+}
+function debug() {
+  if [ ! -z "$DEBUG" ]; then
+    echo -e "\033[0;36m[DEBUG]$@\033[0m"
+  fi
+}
+function error() {
+  echo -e "\033[1;31m[ERROR]$@\033[0m"
+}
+
+##
+# setup default vairables
+##
+function defaults {
+  CD=cd
+  CASE_SENSITIVE=
+  INDEXED_FILE=".indexed.go"
+  return 0
+}
+
+function init {
+  BASE_PATH="$(cd "$(dirname $BASH_SOURCE)" >> /dev/null && pwd -P)"
+  debug "BASE_PATH: $BASE_PATH"
+  debug "PWD: $(pwd)"
+}
+
+##
+# go_to a command
+# @param 1, the command, which starts with '>' indicates a path, '=' indicates a shell command, default to a path
+##
+function go_to {
+  debug "go_to: $@"
+  if [ -z "$TEST" ]; then
+    if [[ "$1" == \>* ]]; then
+      debug "$CD ${1#>}"
+      $CD ${1#>}
+    elif [[ "$1" == \=* ]]; then
+      ${1#=}
+    else
+      $CD $1
+    fi
+  else
+    if [[ "$1" == ">*" ]]; then
+      info "going to: ${1#>}"
+    elif [[ "$1" == "=*" ]]; then
+      info "executing: ${1#=}"
+    else
+      info "going to: $1"
+    fi
+  fi
+}
+
+function go_multi {
+  debug "go_multi: $@"
+  target=$1
+  shift
+
+  info "More than one path is matched:"
+  index=0
+  indexed_file_path="$BASE_PATH/$INDEXED_FILE"
+  if [ -e $indexed_file_path ]; then
+    debug "indexed file exists, remove"
+    rm -f $indexed_file_path
+  fi
+  for command in "$@"; do
+    info " $index: $command"
+    echo "$index${command#$target}" >> $indexed_file_path
+    index=$((index+1))
+  done
+  info "use go @{index} to go to the specified index"
+  return 1
+}
+
+function go_go_file {
+  target=$1
+  shift
+  #
+  # a hack for handling spaces in results when building results array
+  # TODO any better way?
+  #
+  results="$(grep -h "^$target" $@ | awk "{print \"'\"\$1\"'\"}")"
+  eval "results=($results)"
+  if [ "$?" -eq 0 ]; then 
+    debug "get ${#results[@]} matches: ${results[@]}"
+    if [ ${#results[@]} -gt 1 ]; then
+      go_multi $target ${results[@]}
+      return 0
+    else
+      go_to ${results[0]#$target}
+      return 0
+    fi
+  fi
+}
+
+
+#--- sub-routines --------------------------------------------------------------------------
+
+##
+# go to according to indexed command
+##
+function go_indexed {
+  debug "go indexed $@"
+  indexed_file_path=$BASE_PATH/$INDEXED_FILE
+  if [ ! -e $BASE_PATH/$INDEXED_FILE ]; then
+    info "no indexed commands"
+    return 1
+  fi
+  if go_go_file $1 $indexed_file_path; then
+    debug "removed indexed file"
+    rm -f $indexed_file_path
+  fi
+  return 1
+}
+
+##
+# use modules to search
+##
+function search_modules {
+  if [ $# > 1 ]; then
+    module=$1
+    script_module_path=$BASE_PATH/go-$module
+    if [ -e $script_module_path -a -x $script_module_path ]; then
+      shift
+      return $script_module_path "$@"
+    fi
+  fi
+  modules_path="$BASE_PATH/modules"
+  for module in $(ls $modules_path); do
+    module_path="$module_path/$module"
+    debug "search module: $module"
+    go_file="$BASE_PATH/modules/$module/go.sh"
+    if [ -e $go_file -a -x $go_file ]; then
+      if source $go_file $@; then
+        debug "matched in module: $module"
+        return 0
+      else
+        warn "cannot fina any match in module: '$module' for '$@'"
+        return 1
+      fi
+    else
+      warn "cannot find go.sh (or it's not executable) for module: $module"
+    fi
+  done
+  return 1
+}
+
+##
+# search through pathes specified in config/*.go
+##
+function search_pathes_file {
+  if go_go_file "$1" "$(ls $BASE_PATH/config/*.go)"; then
+    return 0
+  fi
+  return 1
+}
+
+##
+# search the file tree rooted with the current directory
+##
+function search_dir_recursively {
+  debug "search recursively with '$1'"
+  return 1
+}
+
+function failed {
+  error "sorry we can't understand you intention with '$@'"
+  return 1
+}
+
+#--- main --------------------------------------------------------------------------
+
+# Setup default variables
+defaults
+
+# Parse options
+while [[ "X$1" == X-* ]]; do
+  if [[ "X$1" == X-t* ]]; then
+    TEST=1
+    info "Dry run..."
+    shift
+  elif [[ "X$1" == X-d* ]]; then
+    DEBUG=1
+    debug "DEBUG on"
+    shift
+  elif [[ "X$1" == X-p* ]]; then
+    CD=pushd
+    debug "use pushd instead of cd"
+    shift
+  elif [[ "X$1" == X-C* ]]; then
+    CASE_SENSITIVE=1
+    debug "case sensitive"
+    shift
+  elif [[ "X$1" == X-h* ]]; then
+    usage
+    return 1
+  fi
+done
+
+# Output usage if not arguments specified
+if [ "$#" -eq 0 ]; then
+  usage
+  return 1
+fi
+
+# Initialize program
+init
+
+debug "go $@"
+if [[ "$1" == @? ]]; then
+  go_indexed ${1#@*}
+  return $?
+fi
+
+##
+# search through sub-routines with folloing sequence
+# * modules
+# * path files in config/*.go
+# * current directory
+# * home directory
+##
+search_modules $@ || search_pathes_file $@ || search_dir_recursively $(pwd) $@ || search_dir_recursively $HOME $@ || failed $@
