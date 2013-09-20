@@ -21,12 +21,22 @@ go add 'video>/home/username/video'
 ```
 
 ## Install && Config
+```
+# make & install
+./configure [--prefix=path]
+make
+sodo make install
 
-TODO
+# setup default configs
+go defaults
+```
+
 
 ## Extend the basic operations
 
-TODO
+* extend with *go file* 
+* extend with *module script*
+* extend with *go module*
 
 ## Compatability
 
