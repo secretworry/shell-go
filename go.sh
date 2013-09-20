@@ -18,27 +18,6 @@ function usage {
 
 #--- lib --------------------------------------------------------------------------
 
-##
-# log functions
-##
-function put() {
-  echo -e $@
-}
-function info() {
-  echo -e "\033[0;32m[INFO]$@\033[0m"
-}
-function warn() {
-  echo -e "\033[0;33m[WARN]$@\033[0m"
-}
-function debug() {
-  if [ ! -z "$DEBUG" ]; then
-    echo -e "\033[0;36m[DEBUG]$@\033[0m"
-  fi
-}
-function error() {
-  echo -e "\033[1;31m[ERROR]$@\033[0m"
-}
-
 function push_IFS() {
   index=${#OLD_IFS[@]}
   OLD_IFS[$index]="$IFS"
@@ -71,6 +50,10 @@ function init {
   BASE_PATH="$(cd "$(dirname $BASH_SOURCE)" >> /dev/null && pwd -P)"
   debug "BASE_PATH: $BASE_PATH"
   debug "PWD: $(pwd)"
+}
+
+function include_libs {
+  source $BASE_PATH/lib/logger.sh
 }
 
 ##
@@ -185,17 +168,19 @@ function search_modules {
   modules_path="$BASE_PATH/modules"
   for module in $(ls $modules_path); do
     module_path="$module_path/$module"
-    debug "search module: $module"
-    go_file="$BASE_PATH/modules/$module/go.sh"
-    if [ -e $go_file -a -x $go_file ]; then
-      if source $go_file $@; then
-        debug "matched in module: $module"
-        return 0
+    if [ -d $module_path ]; then
+      debug "search module: $module"
+      go_file="$BASE_PATH/modules/$module/go.sh"
+      if [ -e $go_file -a -x $go_file ]; then
+        if source $go_file $@; then
+          debug "matched in module: $module"
+          return 0
+        else
+          debug "cannot fina any match in module: '$module' for '$@'"
+        fi
       else
-        debug "cannot fina any match in module: '$module' for '$@'"
+        warn "cannot find go.sh (or it's not executable) for module: $module"
       fi
-    else
-      warn "cannot find go.sh (or it's not executable) for module: $module"
     fi
   done
   return 1
@@ -256,6 +241,11 @@ function failed {
 
 #--- main --------------------------------------------------------------------------
 
+BASE_PATH="$(cd "$(dirname $BASH_SOURCE)" >> /dev/null && pwd -P)"
+
+# include libs
+include_libs
+
 # Setup default variables
 defaults
 
@@ -289,8 +279,6 @@ if [ "$#" -eq 0 ]; then
   return 1
 fi
 
-# Initialize program
-init
 
 debug "go $@"
 if [[ "$1" == @* ]]; then
