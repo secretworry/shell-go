@@ -1,7 +1,7 @@
 shell-go
 ========
 
-a shell script help you to go to anywhere
+a shell script helps you to go to anywhere
 
 ## Usage
 ```
