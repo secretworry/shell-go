@@ -1,10 +1,11 @@
-# Go
+shell-go
+========
 
-a shell script help you to go to everywhere
+a shell script help you to go to anywhere
 
 ## Developers
 
-* [siyu.du](http://gitlab.corp.qunar.com/u/siyu.du) dusiyh@gmail.com
+* [siyu.du](https://github.com/secretworry) dusiyh@gmail.com
 
 ## License
 
