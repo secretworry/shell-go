@@ -1,7 +1,3 @@
-#! /bin/bash
-BASE_PATH=$(dirname $0)
-DEBUG=1
-
 source $BASE_PATH/lib/logger.sh
 
 function complete_modules() {
@@ -21,7 +17,7 @@ function complete_modules() {
         source $modules_path/$file/completion.sh
       fi
     fi
-    debug "modules: $modules"
+    debug "complete -W \"$modules\" go"
     complete -W "$modules" go
   done
 }
