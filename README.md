@@ -41,6 +41,7 @@ go defaults
 ## Compatability
 
 Tested environment(s)
+
 * bash 3.2.48, OS X 10.8.4 (my dev env)
 
 ## Developers
