@@ -20,6 +20,23 @@ go add server=ssh username@192.168.0.37
 go add 'video>/home/username/video'
 ```
 
+## Give it a try?
+```
+# execute try module to do some basic setup
+source go.sh try
+
+# now you can give *go* a try
+
+# add default configs
+go defaults
+
+# add your own named pathes
+go add brew>/usr/local/Cellar
+go add nginx>/usr/local/etc/nginx
+go add test=echo "this is a test"
+
+```
+
 ## Install && Config
 ```
 # make & install
