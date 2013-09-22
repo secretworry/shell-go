@@ -1,5 +1,5 @@
 #! /bin/bash
-BASE_DIR=$(dirname $0)
+BASE_PATH=$(dirname $0)
 DEBUG=1
 
 source $BASE_PATH/lib/logger.sh

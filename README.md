@@ -31,8 +31,8 @@ source go.sh try
 go defaults
 
 # add your own named pathes
-go add brew>/usr/local/Cellar
-go add nginx>/usr/local/etc/nginx
+go add "brew>/usr/local/Cellar"
+go add "nginx>/usr/local/etc/nginx"
 go add test=echo "this is a test"
 
 ```
