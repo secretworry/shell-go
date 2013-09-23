@@ -1,0 +1,1 @@
+myip=curl curlmyip.com
