@@ -20,7 +20,7 @@ go add server=ssh username@192.168.0.37
 go add 'video>/home/username/video'
 
 # go go go!
-go add java=go java workspace #link a go command to anther
+go add java=go java workspace #link a go command to another
 go java #-> go java workspace
 ```
 
