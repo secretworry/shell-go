@@ -18,6 +18,10 @@ go @0                 # go to the match indexed with 0
 go db local     # open a db client linked to the local db server
 go add server=ssh username@192.168.0.37
 go add 'video>/home/username/video'
+
+# go go go!
+go add java=go java workspace #link a go command to anther
+go java #-> go java workspace
 ```
 
 ## Give it a try?
@@ -36,6 +40,28 @@ go add "nginx>/usr/local/etc/nginx"
 go add test=echo "this is a test"
 
 ```
+
+## Wanna see some magic?
+
+you have 2 Ruby directory under ~/Program
+
+* ~/Program/Ruby
+* ~/Program/SourceCode/Ruby
+so 
+```
+go ruby
+```
+will force you to choose from the two
+
+how about use?
+```
+go ruby workspace
+```
+it will search through the two directory, and find the one with a file or directory named with workspace
+you go the only match
+
+* ~/Program/Ruby/workspace
+
 
 ## Install && Config
 ```
