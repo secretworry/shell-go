@@ -207,11 +207,13 @@ function search_dir_recursively {
   debug "search recursively with '$1'"
   root_path=$1
   shift
+  target=$1
+  shift
   FIND_OPTS=""
   if [ -z "$CASE_SENSITIVE" ]; then
-    FIND_OPTS="$FIND_OPTS -iname $@"
+    FIND_OPTS="$FIND_OPTS -iname $target"
   else
-    FIND_OPTS="$FIND_OPTS -name $@"
+    FIND_OPTS="$FIND_OPTS -name $target"
   fi
   if [ ! -z "$MAX_DEPTH" ]; then
     FIND_OPTS="$FIND_OPTS -maxdepth $MAX_DEPTH"
@@ -222,10 +224,24 @@ function search_dir_recursively {
   pop_IFS
   debug "get ${#results[@]} matches: ${results[@]}"
   if [ ${#results[@]} -gt 1 ]; then
-    go_multi $target "${results[@]}"
-    return 0
+    if [ $# -gt 0 ]; then
+      for path in "${results[@]}"; do
+        go_to $path
+        if search_dir_recursively $(pwd) $@ ; then
+          return 0
+        fi
+      done
+    else
+      # found more than one result, and no more clue, invoke go_mulit to make the user select
+      go_multi $target "${results[@]}"
+      return 0
+    fi
   elif [ ${#results[@]} -eq 1 ]; then
     go_to ${results[0]#$target}
+    # more arguments? try to find recursively with other arguments
+    if [ $# -gt 0 ]; then
+      search_dir_recursively $(pwd) $@
+    fi
     return 0
   fi
   return 1
