@@ -53,12 +53,13 @@ go ruby
 ```
 will force you to choose from the two
 
-how about use?
+how about use 
 ```
 go ruby workspace
 ```
+
 it will search through the two directory, and find the one with a file or directory named with workspace
-you go the only match
+now, you go the only match
 
 * ~/Program/Ruby/workspace
 
