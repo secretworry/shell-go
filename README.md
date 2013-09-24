@@ -57,8 +57,8 @@ how about use
 ```
 go ruby workspace
 ```
-
 it will search through the two directory, and find the one with a file or directory named with workspace
+
 now, you go the only match
 
 * ~/Program/Ruby/workspace
